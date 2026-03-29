@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학점 계산기 | GPA Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ee;
+  --surface: #ffffff;
+  --surface2: #f9f8f5;
+  --border: #e5e0d8;
+  --border2: #d4cfc5;
+  --text: #18160f;
+  --text2: #6b6558;
+  --text3: #a8a098;
+  --ink: #18160f;
+  --green: #1e6b3e;
+  --green-bg: #e8f5ee;
+  --blue: #1a3f7a;
+  --blue-bg: #e8eef8;
+  --orange: #b84d00;
+  --red: #991a1a;
+  --radius: 10px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* HEADER */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--ink);
+  padding: 0 20px;
+  display: flex; align-items: center; gap: 16px;
+  height: 52px;
+}
+.site-logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500;
+  color: #fff; letter-spacing: .04em;
+  text-decoration: none;
+}
+
+/* HERO */
+.hero {
+  background: var(--ink);
+  padding: 28px 20px 24px;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: .16em;
+  color: rgba(255,255,255,.35); text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.hero h1 {
+  font-size: 26px; font-weight: 700;
+  color: #fff; letter-spacing: -.02em;
+  margin-bottom: 6px;
+}
+.hero p { font-size: 13px; color: rgba(255,255,255,.45); }
+
+/* SUMMARY BAR */
+.summary-bar {
+  position: sticky; top: 52px; z-index: 90;
+  background: var(--ink);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  display: grid; grid-template-columns: repeat(4,1fr);
+}
+.sum-cell {
+  padding: 12px 14px;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.sum-cell:last-child { border-right: none; }
+.sum-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  color: rgba(255,255,255,.35); text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.sum-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 19px; font-weight: 500; color: #fff;
+  transition: color .25s;
+}
+#sv-total { color: #f5c97a; }
+#sv-major { color: #7de0a8; }
+#sv-liberal { color: #7eb4f0; }
+#sv-34 { color: #f09c7e; }
+
+/* SCALE ROW */
+.scale-row {
+  margin: 18px 16px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.scale-label { font-size: 12px; color: var(--text2); }
+.scale-btns { display: flex; gap: 4px; }
+.scale-btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; padding: 6px 14px;
+  border: 1.5px solid var(--border2);
+  border-radius: 20px; background: var(--surface);
+  color: var(--text2); cursor: pointer; transition: all .15s;
+}
+.scale-btn.active {
+  background: var(--ink); color: #fff; border-color: var(--ink);
+}
+
+/* YEAR SECTION */
+.year-section {
+  margin: 14px 16px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.year-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none;
+}
+.year-title {
+  font-weight: 700; font-size: 15px;
+  display: flex; align-items: center; gap: 8px;
+}
+.year-gpa-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; padding: 2px 9px;
+  background: var(--ink); color: #fff;
+  border-radius: 20px; font-weight: 400;
+}
+.year-chevron { font-size: 11px; color: var(--text3); transition: transform .2s; }
+.year-section.collapsed .year-chevron { transform: rotate(-90deg); }
+.year-section.collapsed .year-body { display: none; }
+
+/* SEMESTER BLOCK */
+.semester-block { border-bottom: 1px solid var(--border); }
+.semester-block:last-child { border-bottom: none; }
+.semester-title {
+  padding: 9px 16px;
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.semester-gpa {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--text3);
+}
+
+/* TABLE */
+.subject-table { width: 100%; border-collapse: collapse; }
+.subject-table thead th {
+  padding: 7px 8px;
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  text-align: left; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.subject-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  animation: slideIn .18s ease;
+}
+.subject-table tbody tr:last-child { border-bottom: none; }
+.subject-table tbody tr:hover { background: var(--surface2); }
+.subject-table td { padding: 6px 6px; vertical-align: middle; }
+
+@keyframes slideIn {
+  from { opacity:0; transform:translateY(-4px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* INPUTS */
+.td-select, .td-input {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 7px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; color: var(--text);
+  background: transparent; outline: none;
+  transition: all .15s; -webkit-appearance: none;
+}
+.td-select:hover, .td-input:hover {
+  background: var(--bg); border-color: var(--border);
+}
+.td-select:focus, .td-input:focus {
+  background: var(--surface); border-color: var(--border2);
+}
+.td-input::placeholder { color: var(--text3); }
+.td-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center;
+  padding-right: 20px; cursor: pointer;
+}
+
+/* type stripe */
+.type-cell { position: relative; padding-left: 12px !important; }
+.type-cell::before {
+  content: ''; position: absolute;
+  left: 4px; top: 6px; bottom: 6px;
+  width: 3px; border-radius: 2px;
+}
+.type-전공필수 .type-cell::before,
+.type-전공선택 .type-cell::before { background: var(--green); }
+.type-교양 .type-cell::before { background: var(--blue); }
+
+/* del btn */
+.del-btn {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 5px; background: transparent;
+  color: var(--text3); font-size: 14px;
+  cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.del-btn:hover { background: #fdeaea; color: var(--red); border-color: #f5b8b8; }
+
+/* add row */
+.add-row td { padding: 7px 12px; border-top: 1px dashed var(--border); }
+.add-subject-btn {
+  background: none; border: none;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px; color: var(--text3);
+  cursor: pointer; padding: 3px 6px;
+  border-radius: 5px; transition: all .15s;
+  display: flex; align-items: center; gap: 4px;
+}
+.add-subject-btn:hover { color: var(--text); background: var(--bg); }
+.add-subject-btn::before { content: '+'; font-size: 15px; line-height: 1; font-weight: 300; }
+
+/* ADD YEAR */
+.add-year-wrap { margin: 12px 16px; }
+.add-year-btn {
+  width: 100%; padding: 10px 24px;
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  background: transparent; color: var(--text2);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px; cursor: pointer;
+  transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-year-btn:hover { border-color: var(--text3); color: var(--text); background: var(--surface); }
+
+/* RESULT */
+.result-section {
+  margin: 4px 16px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.result-top {
+  padding: 16px 20px;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.result-top-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: .14em;
+  color: rgba(255,255,255,.35); text-transform: uppercase;
+}
+.result-gpa-main {
+  font-family: 'DM Mono', monospace;
+  font-size: 34px; font-weight: 500; color: #f5c97a;
+}
+.result-gpa-main small { font-size: 13px; color: rgba(255,255,255,.3); margin-left: 3px; }
+.result-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  border-top: 1px solid var(--border);
+}
+.result-cell {
+  padding: 14px 16px;
+  border-right: 1px solid var(--border);
+}
+.result-cell:last-child { border-right: none; }
+.result-cell-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: .1em;
+  color: var(--text3); text-transform: uppercase; margin-bottom: 5px;
+}
+.result-cell-gpa {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px; font-weight: 500; margin-bottom: 2px;
+}
+.rc-major .result-cell-gpa { color: var(--green); }
+.rc-liberal .result-cell-gpa { color: var(--blue); }
+.rc-34 .result-cell-gpa { color: var(--orange); }
+.result-cell-sub { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+/* AD SLOT */
+.ad-slot {
+  margin: 14px 16px;
+  padding: 16px; text-align: center;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text3); font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .08em;
+  background: var(--surface2);
+}
+
+footer {
+  margin-top: 32px; padding: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center; font-size: 12px; color: var(--text3);
+}
+
+@media (max-width: 500px) {
+  .summary-bar { grid-template-columns: repeat(2,1fr); }
+  .result-grid { grid-template-columns: 1fr 1fr; }
+  .result-grid .rc-34 { grid-column: span 2; border-top: 1px solid var(--border); border-right: none; }
+  .sum-val { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="#" class="site-logo">GPA Calc</a>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">University Tool</div>
+  <h1>학점 계산기</h1>
+  <p>학년 · 학기별 입력으로 전공 / 교양 GPA를 한 번에</p>
+</div>
+
+<div class="summary-bar">
+  <div class="sum-cell"><div class="sum-label">전체 GPA</div><div class="sum-val" id="sv-total">—</div></div>
+  <div class="sum-cell"><div class="sum-label">전공 GPA</div><div class="sum-val" id="sv-major">—</div></div>
+  <div class="sum-cell"><div class="sum-label">교양 GPA</div><div class="sum-val" id="sv-liberal">—</div></div>
+  <div class="sum-cell"><div class="sum-label">3·4학년</div><div class="sum-val" id="sv-34">—</div></div>
+</div>
+
+<div class="scale-row">
+  <span class="scale-label">기준 학점</span>
+  <div class="scale-btns">
+    <button class="scale-btn active" data-scale="4.5">4.5</button>
+    <button class="scale-btn" data-scale="4.3">4.3</button>
+    <button class="scale-btn" data-scale="4.0">4.0</button>
+  </div>
+</div>
+
+<div id="years-container"></div>
+
+<div class="add-year-wrap">
+  <button class="add-year-btn" id="add-year-btn">+ 학년 추가</button>
+</div>
+
+<div class="result-section">
+  <div class="result-top">
+    <div class="result-top-label">계산 결과</div>
+    <div class="result-gpa-main" id="r-total">—<small>/ 4.5</small></div>
+  </div>
+  <div class="result-grid">
+    <div class="result-cell rc-major">
+      <div class="result-cell-label">전공 GPA</div>
+      <div class="result-cell-gpa" id="r-major">—</div>
+      <div class="result-cell-sub" id="r-major-sub">과목 없음</div>
+    </div>
+    <div class="result-cell rc-liberal">
+      <div class="result-cell-label">교양 GPA</div>
+      <div class="result-cell-gpa" id="r-liberal">—</div>
+      <div class="result-cell-sub" id="r-liberal-sub">과목 없음</div>
+    </div>
+    <div class="result-cell rc-34">
+      <div class="result-cell-label">3·4학년 GPA</div>
+      <div class="result-cell-gpa" id="r-34">—</div>
+      <div class="result-cell-sub" id="r-34-sub">해당 없음</div>
+    </div>
+  </div>
+</div>
+
+<div class="ad-slot">
+  <!-- 구글 애드센스 광고 삽입 위치 --><br>
+  AD SPACE · 구글 애드센스
+</div>
+
+<footer>학점 계산기 · 입력한 데이터는 저장되지 않습니다</footer>
+
+<script>
+const SEMESTERS = ['1학기','2학기','여름 계절학기','겨울 계절학기'];
+const TYPES = ['전공필수','전공선택','교양'];
+
+const GRADE_TABLES = {
+  4.5: {'A+':4.5,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0,'P':null},
+  4.3: {'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0,'P':null},
+  4.0: {'A+':4.0,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0,'P':null}
+};
+
+let scale = 4.5;
+let yearCount = 0;
+
+function getGM() { return GRADE_TABLES[scale]; }
+
+function gradeOptions(cur) {
+  return Object.keys(getGM()).map(g =>
+    `<option value="${g}"${g===cur?' selected':''}>${g}</option>`
+  ).join('');
+}
+
+function createRow(yIdx, semIdx) {
+  const tr = document.createElement('tr');
+  tr.dataset.yIdx = yIdx;
+  tr.dataset.semIdx = semIdx;
+  tr.innerHTML = `
+    <td class="type-cell" style="min-width:96px;">
+      <select class="td-select sub-type" onchange="onTypeChange(this)">
+        ${TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}
+      </select>
+    </td>
+    <td style="min-width:110px;">
+      <input class="td-input sub-name" type="text" placeholder="과목명">
+    </td>
+    <td style="width:68px;">
+      <input class="td-input sub-credit" type="number" min="0.5" max="9" step="0.5" placeholder="학점" style="text-align:center;">
+    </td>
+    <td style="width:78px;">
+      <select class="td-select sub-grade">
+        <option value="">성적</option>
+        ${gradeOptions('')}
+      </select>
+    </td>
+    <td style="width:34px;text-align:center;">
+      <button class="del-btn" onclick="this.closest('tr').remove();recalc()">×</button>
+    </td>`;
+  tr.querySelectorAll('.td-input,.td-select').forEach(el => {
+    el.addEventListener('change', recalc);
+    el.addEventListener('input', recalc);
+  });
+  return tr;
+}
+
+function onTypeChange(sel) {
+  recalc();
+}
+
+function addYear(num) {
+  yearCount++;
+  const yIdx = yearCount;
+  const sec = document.createElement('div');
+  sec.className = 'year-section';
+  sec.dataset.yIdx = yIdx;
+  sec.dataset.yearNum = num;
+
+  sec.innerHTML = `
+    <div class="year-header" onclick="this.closest('.year-section').classList.toggle('collapsed')">
+      <div class="year-title">
+        ${num}학년
+        <span class="year-gpa-badge" id="ybadge-${yIdx}">GPA —</span>
+      </div>
+      <span class="year-chevron">▾</span>
+    </div>
+    <div class="year-body" id="ybody-${yIdx}"></div>`;
+
+  const body = sec.querySelector('.year-body');
+  SEMESTERS.forEach((name, sIdx) => {
+    const block = document.createElement('div');
+    block.className = 'semester-block';
+    block.innerHTML = `
+      <div class="semester-title">
+        ${name}
+        <span class="semester-gpa" id="sgpa-${yIdx}-${sIdx}"></span>
+      </div>
+      <table class="subject-table">
+        <thead><tr>
+          <th>이수구분</th><th>과목명</th><th>학점</th><th>성적</th><th></th>
+        </tr></thead>
+        <tbody id="stbody-${yIdx}-${sIdx}"></tbody>
+        <tfoot><tr class="add-row"><td colspan="5">
+          <button class="add-subject-btn" onclick="addSubject(${yIdx},${sIdx})">과목 추가</button>
+        </td></tr></tfoot>
+      </table>`;
+    body.appendChild(block);
+    if (sIdx < 2) {
+      const tbody = block.querySelector('tbody');
+      for (let i = 0; i < 3; i++) tbody.appendChild(createRow(yIdx, sIdx));
+    }
+  });
+
+  document.getElementById('years-container').appendChild(sec);
+  recalc();
+}
+
+function addSubject(yIdx, sIdx) {
+  document.getElementById(`stbody-${yIdx}-${sIdx}`).appendChild(createRow(yIdx, sIdx));
+}
+
+function pf(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+function calcGPA(rows) {
+  let pts = 0, creds = 0;
+  rows.forEach(r => {
+    const gv = getGM()[r.grade];
+    if (gv === null || gv === undefined || !r.credit) return;
+    pts += gv * r.credit; creds += r.credit;
+  });
+  return { gpa: creds ? pts/creds : null, credits: creds };
+}
+
+function fmt(n) { return (n === null || n === undefined) ? '—' : n.toFixed(2); }
+
+function recalc() {
+  const all=[], major=[], liberal=[], s34=[];
+
+  document.querySelectorAll('.year-section').forEach(sec => {
+    const yIdx = sec.dataset.yIdx;
+    const yNum = parseInt(sec.dataset.yearNum);
+    const yearRows = [];
+
+    SEMESTERS.forEach((_, sIdx) => {
+      const tbody = document.getElementById(`stbody-${yIdx}-${sIdx}`);
+      if (!tbody) return;
+      const semRows = [];
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const type = tr.querySelector('.sub-type')?.value;
+        const credit = pf(tr.querySelector('.sub-credit')?.value);
+        const grade = tr.querySelector('.sub-grade')?.value;
+        if (!grade || !credit) return;
+        const row = {type, credit, grade};
+        semRows.push(row); yearRows.push(row); all.push(row);
+        if (type==='전공필수'||type==='전공선택') major.push(row);
+        if (type==='교양') liberal.push(row);
+        if (yNum>=3) s34.push(row);
+      });
+      const sr = calcGPA(semRows);
+      const el = document.getElementById(`sgpa-${yIdx}-${sIdx}`);
+      if (el) el.textContent = sr.credits ? `${fmt(sr.gpa)} / ${sr.credits}학점` : '';
+    });
+
+    const yr = calcGPA(yearRows);
+    const badge = document.getElementById(`ybadge-${yIdx}`);
+    if (badge) badge.textContent = yr.credits ? `GPA ${fmt(yr.gpa)}` : 'GPA —';
+  });
+
+  const T = calcGPA(all), M = calcGPA(major), L = calcGPA(liberal), S = calcGPA(s34);
+  const sl = '/ ' + scale.toFixed(1);
+
+  document.getElementById('sv-total').textContent = fmt(T.gpa);
+  document.getElementById('sv-major').textContent = fmt(M.gpa);
+  document.getElementById('sv-liberal').textContent = fmt(L.gpa);
+  document.getElementById('sv-34').textContent = fmt(S.gpa);
+
+  document.getElementById('r-total').innerHTML = `${T.gpa!==null?fmt(T.gpa):'—'}<small>${sl}</small>`;
+  document.getElementById('r-major').textContent = fmt(M.gpa);
+  document.getElementById('r-major-sub').textContent = M.credits ? `${M.credits}학점 이수` : '과목 없음';
+  document.getElementById('r-liberal').textContent = fmt(L.gpa);
+  document.getElementById('r-liberal-sub').textContent = L.credits ? `${L.credits}학점 이수` : '과목 없음';
+  document.getElementById('r-34').textContent = fmt(S.gpa);
+  document.getElementById('r-34-sub').textContent = S.credits ? `${S.credits}학점 이수` : '해당 없음';
+}
+
+document.querySelectorAll('.scale-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    scale = parseFloat(btn.dataset.scale);
+    document.querySelectorAll('.sub-grade').forEach(sel => {
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">성적</option>' + gradeOptions('');
+      if (cur && getGM()[cur] !== undefined) sel.value = cur;
+    });
+    recalc();
+  });
+});
+
+document.getElementById('add-year-btn').addEventListener('click', () => {
+  addYear(document.querySelectorAll('.year-section').length + 1);
+});
+
+for (let i = 1; i <= 4; i++) addYear(i);
+</script>
+</body>
+</html>
